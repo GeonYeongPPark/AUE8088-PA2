@@ -186,6 +186,7 @@ def train(hyp, opt, device, callbacks):
         gs,
         single_cls,
         hyp=hyp,
+        # augment=True,      # TODO: make it work
         augment=False,      # TODO: make it work
         cache=None if opt.cache == "val" else opt.cache,
         rect=opt.rect,
@@ -460,6 +461,8 @@ def parse_opt(known=False):
     parser.add_argument("--bbox_interval", type=int, default=-1, help="Set bounding-box image logging interval")
     parser.add_argument("--artifact_alias", type=str, default="latest", help="Version of dataset artifact to use")
 
+    # K-fold
+    parser.add_argument("--kfold", action="store_true")
     return parser.parse_known_args()[0] if known else parser.parse_args()
 
 
@@ -468,22 +471,43 @@ def main(opt, callbacks=Callbacks()):
     print_args(vars(opt))
     check_git_status(repo="ircvlab/aue8088-pa2", branch="main")
     check_requirements(ROOT / "requirements.txt")
+    
+    if opt.kfold:
+        for i in range(6):
+                opt.data = 'data/kaist-rgbt_fold{}.yaml'.format(i)
+                opt.name = 'yolov5s_fold{}'.format(i)
+                opt.data, opt.cfg, opt.hyp, opt.weights, opt.project = (
+                    check_file(opt.data),
+                    check_yaml(opt.cfg),
+                    check_yaml(opt.hyp),
+                    str(opt.weights),
+                    str(opt.project),
+                )  # checks
+                assert len(opt.cfg) or len(opt.weights), "either --cfg or --weights must be specified"
+                if opt.name == "cfg":
+                    opt.name = Path(opt.cfg).stem  # use model.yaml as name
+                opt.save_dir = str(increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok))
 
-    opt.data, opt.cfg, opt.hyp, opt.weights, opt.project = (
-        check_file(opt.data),
-        check_yaml(opt.cfg),
-        check_yaml(opt.hyp),
-        str(opt.weights),
-        str(opt.project),
-    )  # checks
-    assert len(opt.cfg) or len(opt.weights), "either --cfg or --weights must be specified"
-    if opt.name == "cfg":
-        opt.name = Path(opt.cfg).stem  # use model.yaml as name
-    opt.save_dir = str(increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok))
+                # Train
+                device = select_device(opt.device, batch_size=opt.batch_size)
+                train(opt.hyp, opt, device, callbacks)
 
-    # Train
-    device = select_device(opt.device, batch_size=opt.batch_size)
-    train(opt.hyp, opt, device, callbacks)
+    else:
+        opt.data, opt.cfg, opt.hyp, opt.weights, opt.project = (
+            check_file(opt.data),
+            check_yaml(opt.cfg),
+            check_yaml(opt.hyp),
+            str(opt.weights),
+            str(opt.project),
+        )  # checks
+        assert len(opt.cfg) or len(opt.weights), "either --cfg or --weights must be specified"
+        if opt.name == "cfg":
+            opt.name = Path(opt.cfg).stem  # use model.yaml as name
+        opt.save_dir = str(increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok))
+
+        # Train
+        device = select_device(opt.device, batch_size=opt.batch_size)
+        train(opt.hyp, opt, device, callbacks)
 
 
 if __name__ == "__main__":

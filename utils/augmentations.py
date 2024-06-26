@@ -157,6 +157,10 @@ def random_perspective(
     # torchvision.transforms.RandomAffine(degrees=(-10, 10), translate=(0.1, 0.1), scale=(0.9, 1.1), shear=(-10, 10))
     # targets = [cls, xyxy]
 
+    ims = im
+    if isinstance(ims, list):
+        im = ims[0]
+
     height = im.shape[0] + border[0] * 2  # shape(h,w,c)
     width = im.shape[1] + border[1] * 2
 
@@ -189,12 +193,20 @@ def random_perspective(
     T[1, 2] = random.uniform(0.5 - translate, 0.5 + translate) * height  # y translation (pixels)
 
     # Combined rotation matrix
-    M = T @ S @ R @ P @ C  # order of operations (right to left) is IMPORTANT
-    if (border[0] != 0) or (border[1] != 0) or (M != np.eye(3)).any():  # image changed
-        if perspective:
-            im = cv2.warpPerspective(im, M, dsize=(width, height), borderValue=(114, 114, 114))
-        else:  # affine
-            im = cv2.warpAffine(im, M[:2], dsize=(width, height), borderValue=(114, 114, 114))
+    M = T @ S @ R @ P @ C
+    if (border[0] != 0) or (border[1] != 0) or (M != np.eye(3)).any():  
+        if isinstance(ims, list):
+            for i in range(len(ims)):
+                if perspective:
+                    ims[i] = cv2.warpPerspective(ims[i], M, dsize=(width, height), borderValue=(114, 114, 114))
+                else:  # affine
+                    ims[i] = cv2.warpAffine(ims[i], M[:2], dsize=(width, height), borderValue=(114, 114, 114))
+            im = ims
+        else:
+            if perspective:
+                im = cv2.warpPerspective(im, M, dsize=(width, height), borderValue=(114, 114, 114))
+            else:  # affine
+                im = cv2.warpAffine(im, M[:2], dsize=(width, height), borderValue=(114, 114, 114))
 
     # Visualize
     # import matplotlib.pyplot as plt
@@ -305,7 +317,12 @@ def mixup(im, labels, im2, labels2):
     See https://arxiv.org/pdf/1710.09412.pdf for details.
     """
     r = np.random.beta(32.0, 32.0)  # mixup ratio, alpha=beta=32.0
-    im = (im * r + im2 * (1 - r)).astype(np.uint8)
+
+    if isinstance(im, list):
+        for i in range(len(im)):
+            im[i] = (im[i] * r + im2[i] * (1 - r)).astype(np.uint8)
+    else:
+        im = (im * r + im2 * (1 - r)).astype(np.uint8)
     labels = np.concatenate((labels, labels2), 0)
     return im, labels
 

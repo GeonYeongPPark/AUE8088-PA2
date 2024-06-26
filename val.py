@@ -292,7 +292,7 @@ def run(
                 if plots:
                     confusion_matrix.process_batch(predn, labelsn)
             stats.append((correct, pred[:, 4], pred[:, 5], labels[:, 0]))  # (correct, conf, pcls, tcls)
-
+                        
             # Save/log
             if save_txt:
                 (save_dir / "labels").mkdir(parents=True, exist_ok=True)
@@ -361,32 +361,32 @@ def run(
         # Run evaluation: KAIST Multispectral Pedestrian Dataset
         try:
             # HACK: need to generate KAIST_annotation.json for your own validation set
-            if not os.path.exists('utils/eval/KAIST_annotation.json'):
+            if not os.path.exists('utils/eval/KAIST_annotation.json'): #'datasets/KAIST_annotation_1_5.json' utils/eval/KAIST_annotation.json
                 raise FileNotFoundError('Please generate KAIST_annotation.json for your own validation set.')
             os.system(f"python3 utils/eval/kaisteval.py --annFile utils/eval/KAIST_annotation.json --rstFile {pred_json}")
         except Exception as e:
             LOGGER.info(f"kaisteval unable to run: {e}")
 
-        # Run evaluation: MSCOCO Dataset
-        anno_json = str(Path("../datasets/coco/annotations/instances_val2017.json"))  # annotations
-        if not os.path.exists(anno_json):
-            anno_json = os.path.join(data["path"], "annotations", "instances_val2017.json")
-        try:  # https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocoEvalDemo.ipynb
-            check_requirements("pycocotools>=2.0.6")
-            from pycocotools.coco import COCO
-            from pycocotools.cocoeval import COCOeval
+        # # Run evaluation: MSCOCO Dataset
+        # anno_json = str(Path("../datasets/coco/annotations/instances_val2017.json"))  # annotations
+        # if not os.path.exists(anno_json):
+        #     anno_json = os.path.join(data["path"], "annotations", "instances_val2017.json")
+        # try:  # https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocoEvalDemo.ipynb
+        #     check_requirements("pycocotools>=2.0.6")
+        #     from pycocotools.coco import COCO
+        #     from pycocotools.cocoeval import COCOeval
 
-            anno = COCO(anno_json)  # init annotations api
-            pred = anno.loadRes(pred_json)  # init predictions api
-            eval = COCOeval(anno, pred, "bbox")
-            if is_coco:
-                eval.params.imgIds = [int(Path(x).stem) for x in dataloader.dataset.im_files]  # image IDs to evaluate
-            eval.evaluate()
-            eval.accumulate()
-            eval.summarize()
-            map, map50 = eval.stats[:2]  # update results (mAP@0.5:0.95, mAP@0.5)
-        except Exception as e:
-            LOGGER.info(f"pycocotools unable to run: {e}")
+        #     anno = COCO(anno_json)  # init annotations api
+        #     pred = anno.loadRes(pred_json)  # init predictions api
+        #     eval = COCOeval(anno, pred, "bbox")
+        #     if is_coco:
+        #         eval.params.imgIds = [int(Path(x).stem) for x in dataloader.dataset.im_files]  # image IDs to evaluate
+        #     eval.evaluate()
+        #     eval.accumulate()
+        #     eval.summarize()
+        #     map, map50 = eval.stats[:2]  # update results (mAP@0.5:0.95, mAP@0.5)
+        # except Exception as e:
+        #     LOGGER.info(f"pycocotools unable to run: {e}")
 
     # Return results
     model.float()  # for training

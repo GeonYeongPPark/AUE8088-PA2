@@ -547,7 +547,7 @@ class KAISTPedEval(COCOeval):
         ax.set_yticklabels(yticklabels)
         ax.grid(which='major', axis='both')
         ax.set_ylim(0.01, 1)
-        ax.set_xlim(2e-4, 50)
+        ax.set_xlim(1e-2, 1)
         ax.set_ylabel('miss rate')
         ax.set_xlabel('false positives per image')
 
@@ -642,8 +642,8 @@ def evaluate(test_annotation_file: str, user_submission_file: str, phase_codenam
     #     # + f'recall_all: {recall_all * 100:.2f}\n' \
     # print(msg)
 
-    return metrics
-    # return eval_result
+    # return metrics
+    return eval_result
 
 
 def draw_all(eval_results, filename='figure.jpg'):
@@ -658,7 +658,7 @@ def draw_all(eval_results, filename='figure.jpg'):
         Filename of figure
     """
     fig, axes = plt.subplots(1, 3, figsize=(45, 10))
-
+    
     methods = [res['all'].method for res in eval_results]
     colors = [plt.cm.get_cmap('Paired')(ii)[:3] for ii in range(len(eval_results))]
 
@@ -693,4 +693,4 @@ if __name__ == "__main__":
 
     # Sort results by MR_all
     # results = sorted(results, key=lambda x: x['all'].summarize(0), reverse=True)
-    # draw_all(results, filename=args.evalFig)
+    draw_all(results, filename=args.evalFig)
